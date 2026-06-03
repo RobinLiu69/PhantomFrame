@@ -107,6 +107,7 @@ python encode.py --text "Secret" -n 16 -o output --bg-color 80
 
 ### 圖片輸入
 
+很爛 還在測試
 ```bash
 python encode.py --image logo.png -n 6 -o output --method random
 ```
