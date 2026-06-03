@@ -44,6 +44,24 @@ def make_text_signal(text, canvas_size, font_size=None, font_path=None, padding=
     return img
 
 
+def get_image_size(image_path):
+    with Image.open(image_path) as img:
+        return img.size
+
+
+def load_background(image_path, canvas_size, color=True):
+    mode = "RGB" if color else "L"
+    img = Image.open(image_path).convert(mode).resize(
+        tuple(canvas_size), Image.Resampling.LANCZOS
+    )
+    return np.array(img, dtype=np.float32) / 255.0
+
+
+def make_solid_background(canvas_size, gray=128):
+    w, h = canvas_size
+    return np.full((h, w), gray / 255.0, dtype=np.float32)
+
+
 def make_image_signal(image_path, canvas_size):
     return Image.open(image_path).convert("L").resize(tuple(canvas_size), Image.Resampling.LANCZOS)
 

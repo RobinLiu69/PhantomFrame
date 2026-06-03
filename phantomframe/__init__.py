@@ -1,7 +1,10 @@
-from .encoder import encode_random, encode_bluenoise, encode_sparse, encode_partition
+from .encoder import encode_random, encode_bluenoise, encode_sparse, encode_partition, encode_blend
 from .signal import (
     make_text_signal,
     make_image_signal,
+    get_image_size,
+    load_background,
+    make_solid_background,
     apply_outline,
     apply_density,
     apply_prefilter,
@@ -14,8 +17,12 @@ __all__ = [
     "encode_bluenoise",
     "encode_sparse",
     "encode_partition",
+    "encode_blend",
     "make_text_signal",
     "make_image_signal",
+    "get_image_size",
+    "load_background",
+    "make_solid_background",
     "apply_outline",
     "apply_density",
     "apply_prefilter",
