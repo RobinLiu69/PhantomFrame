@@ -40,7 +40,8 @@ def build_parser():
         "--method",
         choices=["random", "bluenoise", "sparse", "partition"],
         default="random",
-        help="encoding algorithm (default: random)",
+        help="encoding algorithm (default: random). 'bluenoise' is IGN-based "
+             "temporal dithering, visually close to but not true blue noise.",
     )
     p.add_argument("--bg",        default=None,
                    help="background image path; hides the signal inside the photo")
@@ -56,7 +57,9 @@ def build_parser():
                    help="(blend) adapt grain to local detail 0-1 (default: 1.0). "
                         "Keeps flat single-colour areas quiet; 0 = uniform grain.")
     p.add_argument("--signal-frames",    type=int, default=None,
-                   help="(sparse) number of frames carrying the signal")
+                   help="(sparse) number of frames carrying the signal. "
+                        "Too small saturates the contrast and the average can't "
+                        "fully restore brightness; use >= contrast * frames.")
     p.add_argument("--direction",
                    choices=["horizontal", "vertical"], default="horizontal",
                    help="(partition) strip direction (default: horizontal)")
@@ -76,6 +79,8 @@ def main():
     p = build_parser()
     args = p.parse_args()
 
+    density_seed, encoder_seed = np.random.SeedSequence(args.seed).spawn(2)
+
     canvas = tuple(args.canvas) if args.canvas else \
              (get_image_size(args.bg) if args.bg else (400, 150))
 
@@ -91,7 +96,7 @@ def main():
     if args.outline:
         sig_arr = apply_outline(sig_arr, width=args.outline_width)
     if args.density < 1.0:
-        sig_arr = apply_density(sig_arr, args.density, seed=args.seed)
+        sig_arr = apply_density(sig_arr, args.density, seed=density_seed)
     if args.prefilter:
         sig_arr = apply_prefilter(sig_arr, blur_radius=args.blur)
 
@@ -104,26 +109,29 @@ def main():
         bg = load_background(args.bg, canvas, color=True) if args.bg \
             else make_solid_background(canvas, gray=args.bg_color)
         frames = encode_blend(sig_arr, bg, args.frames,
-                              seed=args.seed, contrast=args.contrast,
+                              seed=encoder_seed, contrast=args.contrast,
                               amplitude=args.amplitude, halo=args.halo,
                               texture=args.texture)
     elif args.method == "sparse":
         sf = args.signal_frames
         if sf is None or not (1 <= sf <= args.frames):
             p.error(f"--method sparse requires --signal-frames between 1 and {args.frames}")
+        if sf == args.frames:
+            print("Info: sparse with signal-frames == frames is equivalent to random mode "
+                  "(every frame carries the signal, no decoy frames).")
         frames = encode_sparse(sig_arr, args.frames, sf,
-                               seed=args.seed, contrast=args.contrast)
+                               seed=encoder_seed, contrast=args.contrast)
     elif args.method == "partition":
         frames = encode_partition(sig_arr, args.frames,
-                                  seed=args.seed, contrast=args.contrast,
+                                  seed=encoder_seed, contrast=args.contrast,
                                   direction=args.direction,
                                   passive_contrast=args.passive_contrast)
     elif args.method == "bluenoise":
         frames = encode_bluenoise(sig_arr, args.frames,
-                                  seed=args.seed, contrast=args.contrast)
+                                  seed=encoder_seed, contrast=args.contrast)
     else:
         frames = encode_random(sig_arr, args.frames,
-                               seed=args.seed, contrast=args.contrast)
+                               seed=encoder_seed, contrast=args.contrast)
 
     out_dir = save_outputs(frames, sig_arr, args.output_dir,
                            gif=args.preview_gif, gif_fps=args.preview_fps)

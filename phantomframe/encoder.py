@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 from PIL import Image, ImageFilter
 
@@ -48,6 +50,15 @@ def encode_sparse(signal, n_frames, signal_frames, seed=None, contrast=1.0):
     h, w = signal.shape
 
     boost = n_frames / signal_frames
+    if contrast * boost > 1.0:
+        min_frames = int(np.ceil(contrast * n_frames))
+        warnings.warn(
+            f"sparse contrast saturated: contrast*({n_frames}/{signal_frames}) = "
+            f"{contrast * boost:.2f} > 1.0, so the temporal average cannot fully "
+            f"restore the original brightness. Increase --signal-frames to at least "
+            f"{min_frames} (signal_frames >= contrast * n_frames) to avoid clipping.",
+            stacklevel=2,
+        )
     eff_contrast = min(1.0, contrast * boost)
     signal_mod = 0.5 + (signal - 0.5) * eff_contrast
     signal_mod = np.clip(signal_mod, 0, 1)

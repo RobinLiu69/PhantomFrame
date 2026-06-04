@@ -19,7 +19,7 @@
 | 算法 | 說明 | 優點 | 缺點 |
 |------|------|------|------|
 | `random` | 每像素獨立隨機選幀（**預設**） | 自然雜訊感 | — |
-| `bluenoise` | IGN 藍噪聲時間抖動 | 單幀空間均勻 | 低對比下與 random 差異不大 |
+| `bluenoise` | IGN 時間抖動（視覺上接近藍噪聲） | 單幀空間均勻 | 低對比下與 random 差異不大 |
 | `sparse` | 部分幀帶訊號，其餘純雜訊 | 誘餌幀零洩漏 | 訊號幀對比較高 |
 | `partition` | 每幀凸顯空間一段 | 可支援多訊號切換 | 部分幀仍有微弱訊號 |
 
@@ -71,6 +71,9 @@ python encode.py --text "Secret" -n 6 -o out_bluenoise --method bluenoise
 python encode.py --text "Secret" -n 8 -o output --method sparse --signal-frames 3
 ```
 
+> **注意：** `--signal-frames` 太小會讓訊號幀的對比飽和（夾到 1.0），時間平均無法完整還原原始亮度。
+> 建議 `signal-frames >= contrast × frames`；低於此值時程式會印出 warning 並提示建議的最小幀數。
+
 ### Partition 模式（空間分區）
 
 ```bash
@@ -104,6 +107,9 @@ python encode.py --text "Secret" -n 16 -o output --bg-color 80
 > 彩色背景的顆粒會依 Rec.709 亮度等比縮放各通道，**保留色相**（紅色區域只會變亮紅/暗紅，不偏白）。
 >
 > **小提醒：** 文字盡量放在背景有紋理的地方。純單色區（如天空、白牆）因為沒有細節可遮蔽，藏字效果天生較差。
+>
+> **警告：** 彩色背景的可用 headroom 來自亮度與最大通道的比值，在**純飽和色**區域（某通道 = 1，例如純紅、純綠）headroom→0，
+> 該處訊號會被完全夾掉而消失。真實照片很少觸發，但純色測試圖要避免把文字放在這類飽和色塊上。
 
 ### 圖片輸入
 
@@ -219,7 +225,11 @@ frame = background + delta            （彩色則依 Rec.709 亮度等比縮放
 - 訊號偏移僅為顆粒的 `contrast` 比例 → 單幀被顆粒淹沒，平均 ~√幀數 倍降噪後才浮現
 - `grain_std` 隨局部紋理自適應（視覺遮蔽）→ 複雜處藏得住、平坦單色區自動安靜
 
-### 藍噪聲時間抖動（bluenoise，選用）
+### IGN 時間抖動（bluenoise，選用）
+
+> 嚴格來說這不是真正的藍噪聲（沒有 void-and-cluster 的頻譜特性），而是
+> **Interleaved Gradient Noise (IGN)** 這種 low-discrepancy 螺旋噪聲，視覺上接近藍噪聲。
+> `bluenoise` 這個名稱為了向後相容而保留。
 
 對每一幀生成一張 **Interleaved Gradient Noise (IGN)** 閾值圖：
 

@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
@@ -18,7 +20,12 @@ def find_font(font_path=None, size=60):
             return ImageFont.truetype(c, size)
         except (OSError, IOError):
             continue
-    print("Warning: no system font found, using PIL default")
+    warnings.warn(
+        "No TrueType font found; falling back to PIL's built-in bitmap font. "
+        "It is tiny and will look badly pixelated at large sizes. "
+        "Pass --font /path/to/font.ttf to use a real font.",
+        stacklevel=2,
+    )
     return ImageFont.load_default()
 
 

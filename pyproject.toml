@@ -18,8 +18,16 @@ dependencies = [
     "Pillow>=10.0",
 ]
 
+[project.optional-dependencies]
+test = [
+    "pytest>=7.0",
+]
+
 [project.scripts]
 phantomframe = "phantomframe.cli:main"
 
 [tool.setuptools]
 packages = ["phantomframe"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
